@@ -32,7 +32,7 @@ class URL:
             self.host, port = self.host.split(":", 1)
             self.port = int(port)
 
-    # Method won't work if you're offline / behing a proxy / cmoplex environment
+    # Method won't work if you're offline / behing a proxy / complex environment
     def request(self):
         if self.scheme == "file":
             with open(self.path, 'rb') as f: 
@@ -40,7 +40,7 @@ class URL:
             return b"HTTP/1.1 200 OK\r\n\r\n" + content
         elif self.scheme == "data":
             if self.media.split("/", 1)[0] == 'text':
-                return self.data + '\r\n'
+                return "HTTP/1.1 200 OK \r\nContent-Type: {}\r\n\r\n{}".format(self.media, self.data + '\r\n')
 
         # Socket for communicating with server
         ctx = ssl.create_default_context()
@@ -80,14 +80,32 @@ class URL:
         return content
 
 def show(body): 
-        in_tag = False
-        for c in body: 
-            if c == '<': 
-                in_tag = True
-            elif c == '>':
-                in_tag = False
-            elif not in_tag:
-                print(c, end="")
+    in_tag = False
+    i = 0
+    while i < len(body):
+        if body[i] == '<':
+            in_tag = True
+        elif body[i] == '>':
+            in_tag = False
+        
+        if not in_tag and body[i] == '&':
+            # Check for HTML entities
+            if i + 4 <= len(body) and body[i:i+4] == "&lt;":
+                print('<', end="")
+                i += 3  # Skip the remaining "lt;"
+            elif i + 4 <= len(body) and body[i:i+4] == "&gt;":
+                print('>', end="")
+                i += 3  # Skip the remaining "gt;"
+            elif i + 5 <= len(body) and body[i:i+5] == "&amp;":
+                print('&', end="")
+                i += 4  # Skip the remaining "amp;"
+            else:
+                # Not a recognized entity, print the '&' normally
+                print(body[i], end="")
+        elif not in_tag:
+            print(body[i], end="")
+        i += 1
+
 
 def load(url):
         body = url.request()
