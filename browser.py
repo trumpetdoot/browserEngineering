@@ -17,6 +17,10 @@ class URL:
         elif self.scheme == "file": 
             self.path = url
             return
+        elif self.scheme == "data":
+            self.media, self.data = content.split(',', 1)
+            return
+
 
         if '/' not in url:
             self += "/"
@@ -34,6 +38,10 @@ class URL:
             with open(self.path, 'rb') as f: 
                 content = f.read()
             return b"HTTP/1.1 200 OK\r\n\r\n" + content
+        elif self.scheme == "data":
+            if self.media.split("/", 1)[0] == 'text':
+                return self.data + '\r\n'
+
         # Socket for communicating with server
         ctx = ssl.create_default_context()
         s = socket.socket(
@@ -51,7 +59,7 @@ class URL:
         request += "User-Agent: {}\r\n".format("Andy")
         request += "Host: {}\r\n".format(self.host)
         request += "\r\n"
-        s.send(request.encode("utf8")) # Converts python strin got byteso
+        s.send(request.encode("utf8")) # Converts python string to bytes
         response = s.makefile("r", encoding="utf8", newline="\r\n")
 
         statusline = response.readline()
@@ -88,5 +96,3 @@ def load(url):
 if __name__ == "__main__":
     import sys
     load(URL(sys.argv[1]))
-
-
